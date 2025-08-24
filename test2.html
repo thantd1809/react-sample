@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Arrow Key vs Tab Demo</title>
+  <style>
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 80px);
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    input {
+      padding: 6px;
+      text-align: center;
+    }
+    .buttons {
+      display: flex;
+      gap: 8px;
+    }
+    button {
+      padding: 6px 12px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Grid 3x3 Input (Arrow key works)</h2>
+  <div class="grid">
+    <input type="text" />
+    <input type="text" />
+    <input type="text" />
+    <input type="text" />
+    <input type="text" />
+    <input type="text" />
+    <input type="text" />
+    <input type="text" />
+    <input type="text" />
+  </div>
+
+  <h2>5 Buttons (Arrow key does NOT move focus)</h2>
+  <div class="buttons">
+    <button>Button 1</button>
+    <button>Button 2</button>
+    <button>Button 3</button>
+    <button>Button 4</button>
+    <button>Button 5</button>
+  </div>
+
+  <p>👉 Hãy thử:</p>
+  <ul>
+    <li>Dùng <b>Arrow keys</b> trong grid input → di chuyển giữa ô giống Excel.</li>
+    <li>Dùng <b>Arrow keys</b> trên button → không di chuyển, chỉ Tab mới di chuyển được.</li>
+  </ul>
+</body>
+</html>

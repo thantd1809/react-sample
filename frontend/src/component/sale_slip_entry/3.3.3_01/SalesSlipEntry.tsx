@@ -1,5 +1,5 @@
 import React from "react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import DepositProcess from "./DepositProcess";
 import CategorySelectionModal from "./CategorySelectionModal";
 import SalesSlipEntryRegistration from "./SalesSlipEntryRegistration";
@@ -7,6 +7,7 @@ import { DownArrowIcon } from "../../transaction_information/LeftPanel";
 import ProductSearchModal from "./ProductSearchModal";
 import SaleDetailModal from "./SaleDetail/SaleDetailModal";
 import StatusBar from "../StatusBar";
+import { createPortal } from "react-dom";
 
 
 export default function SalesSlipEntry() {
@@ -18,6 +19,96 @@ export default function SalesSlipEntry() {
     const [selectedCategory, setSelectedCategory] = useState("");
     const [isSaleDetailModalOpen, setIsSaleDetailModalOpen] = useState(false);
     const [currentStep, setCurrentStep] = useState(1);
+    const [saleSlips, setSaleSlips] = useState([
+        {
+            headerRow: {
+                no: "01",
+                icon: "",
+                categoryName: "売上",
+                outsideMonth: 1,
+                selfTransferTarget: 1,
+            },
+            bodyRow: {
+                titleInfo: {
+                    productName: "パロマ 給湯器 PH-163EWS",
+                    supplierName: "ABC商事",
+                },
+                detailInfo: {
+                    quantity: "01",
+                    tax: "100,000",
+                },
+                note: "備考がある場合追加で表示。当月分が空白の場合ラベルは非表示。",
+            },
+        },
+        {
+            headerRow: {
+                no: "02",
+                icon: "",
+                categoryName: "売上",
+                outsideMonth: 1,
+                selfTransferTarget: 1,
+            },
+            bodyRow: {
+                titleInfo: {
+                    productName: "リンナイ 給湯器 RUX-V1615W-E",
+                    supplierName: "XYZ商会",
+                },
+                detailInfo: {
+                    quantity: "02",
+                    tax: "200,000",
+                },
+                note: "",
+            },
+        },
+    ]);
+
+    const [activeSlipIndex, setActiveSlipIndex] = useState<number | null>(null);
+    const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number } | null>(null);
+    const slipRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+    const handleClickSlip = (index: number) => {
+        if (activeSlipIndex === index) {
+            setActiveSlipIndex(null);
+            setTooltipPos(null);
+            return;
+        }
+        setActiveSlipIndex(index);
+
+        // Lấy tọa độ slip để định vị tooltip
+        const rect = slipRefs.current[index]?.getBoundingClientRect();
+        if (rect) {
+            setTooltipPos({
+                top: rect.top + window.scrollY + rect.height / 2 - 30, // căn giữa slip
+                left: rect.right + 10 + window.scrollX, // đặt tooltip bên phải slip
+            });
+        }
+    };
+
+    // 🔑 Click outside để đóng tooltip
+    // useEffect(() => {
+    //     function handleClickOutside(e: MouseEvent) {
+    //         // Nếu tooltip đang mở
+    //         if (activeSlipIndex !== null) {
+    //             const clickedInsideSlip = slipRefs.current[activeSlipIndex]?.contains(e.target as Node);
+    //             if (!clickedInsideSlip) {
+    //                 setActiveSlipIndex(null);
+    //                 setTooltipPos(null);
+    //             }
+    //         }
+    //     }
+
+    //     document.addEventListener("mousedown", handleClickOutside);
+    //     return () => document.removeEventListener("mousedown", handleClickOutside);
+    // }, [activeSlipIndex]);
+
+    const handleAddSaleSlip = (data: any) => {
+        setSaleSlips([...saleSlips, data]);
+    }
+
+    const handleDeleteLine = (index: number) => {
+        setSaleSlips((prev) => prev.filter((_, i) => i !== index));
+        setActiveSlipIndex(null); // ẩn balloon sau khi delete
+    };
 
     const handleCategorySelect = (categoryName: string) => {
         setSelectedCategory(categoryName);
@@ -109,17 +200,17 @@ export default function SalesSlipEntry() {
                         </button>
                     </div>
                 </div>
-                <SalesSlipEntryRegistration
+                {/* <SalesSlipEntryRegistration
                     headerRow={{
                         no: "02",
-                        icon: "/icon.png",
+                        icon: "",
                         categoryName: "売上",
                         outsideMonth: 1,
                         selfTransferTarget: 1,
                     }}
                     bodyRow={{
-                        productionInfo: {
-                            name: "パロマ 給湯器 PH-163EWS",
+                        titleInfo: {
+                            productName: "パロマ 給湯器 PH-163EWS",
                             supplierName: "ABC商事",
                         },
                         detailInfo: {
@@ -128,8 +219,59 @@ export default function SalesSlipEntry() {
                         },
                         note: "備考がある場合追加で表示。当月分が空白の場合ラベルは非表示。",
                     }}
-                />
+                /> */}
+                <div className="max-h-96 overflow-y-auto border p-2 relative">
+                    {saleSlips.map((slip, index) => (
+                        <div
+                            key={index}
+                            ref={(el) => {
+                                slipRefs.current[index] = el;
+                            }}
+                            onClick={() => handleClickSlip(index)}
+                        >
+                            <SalesSlipEntryRegistration
+                                headerRow={slip.headerRow}
+                                bodyRow={slip.bodyRow}
+                            />
+                        </div>
+                    ))}
 
+                    {/* Tooltip hiển thị bằng Portal */}
+                    {activeSlipIndex !== null && tooltipPos &&
+                        createPortal(
+                            <div
+                                style={{
+                                    position: "absolute",
+                                    top: tooltipPos.top,
+                                    left: tooltipPos.left,
+                                    zIndex: 9999,
+                                }}
+                            >
+                                <div className="relative bg-white border shadow-lg rounded-md p-2">
+                                    {/* Mũi tên bên trái */}
+                                    <div
+                                        className="absolute top-4 -left-2 w-0 h-0 
+                           border-t-8 border-b-8 border-r-8 border-transparent border-r-white"
+                                    ></div>
+
+                                    <button className="block w-full text-left px-2 py-1 hover:bg-gray-100">
+                                        行編集
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteLine(activeSlipIndex)}
+                                        className="block w-full text-left px-2 py-1 hover:bg-gray-100">
+                                        行削除
+                                    </button>
+                                    <button
+                                        onClick={() => setIsOpenCategorySelection(true)}
+                                        className="block w-full text-left px-2 py-1 hover:bg-gray-100">
+                                        行追加
+                                    </button>
+                                </div>
+                            </div>,
+                            document.body
+                        )}
+                </div>
                 {/* 行追加 */}
                 <div className="flex justify-center items-center my-6 font-bold text-[16px] text-black">
                     <button
@@ -206,6 +348,7 @@ export default function SalesSlipEntry() {
                     isOpen={isSaleDetailModalOpen}
                     onClose={() => setCurrentStep(2)}
                     categoryName={selectedCategory}
+                    onNext={handleAddSaleSlip}
                 />
             )}
         </div>
